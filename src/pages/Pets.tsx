@@ -15,44 +15,66 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 
 const Pets: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+
   const [pets, setPets] = useState<Pet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
 
+  /* ---------------- INITIALIZE DATA ---------------- */
   useEffect(() => {
     initializeDemoData();
+
     const storedPets = localStorage.getItem(STORAGE_KEYS.PETS);
     const storedCategories = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+
     if (storedPets) setPets(JSON.parse(storedPets));
     if (storedCategories) setCategories(JSON.parse(storedCategories));
   }, []);
 
+  /* ---------------- READ CATEGORY FROM URL ---------------- */
+  useEffect(() => {
+    const categoryFromURL = searchParams.get('category');
+
+    if (categoryFromURL) {
+      setSelectedCategory(decodeURIComponent(categoryFromURL));
+    } else {
+      setSelectedCategory('all');
+    }
+  }, [searchParams]);
+
+  /* ---------------- FILTER LOGIC ---------------- */
   const filteredPets = pets
     .filter(pet => {
-      const matchesSearch = pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           pet.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           pet.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || pet.category === selectedCategory;
-      const matchesPrice = pet.price >= priceRange[0] && pet.price <= priceRange[1];
-      const matchesStatus = statusFilter === 'all' || pet.status === statusFilter;
+      const matchesSearch =
+        pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pet.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pet.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesCategory =
+        selectedCategory === 'all' || pet.category === selectedCategory;
+
+      const matchesPrice =
+        pet.price >= priceRange[0] && pet.price <= priceRange[1];
+
+      const matchesStatus =
+        statusFilter === 'all' || pet.status === statusFilter;
+
       return matchesSearch && matchesCategory && matchesPrice && matchesStatus;
     })
     .sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low': return a.price - b.price;
-        case 'price-high': return b.price - a.price;
-        case 'name': return a.name.localeCompare(b.name);
-        default: return 0;
-      }
+      if (sortBy === 'price-low') return a.price - b.price;
+      if (sortBy === 'price-high') return b.price - a.price;
+      return a.name.localeCompare(b.name);
     });
 
+  /* ---------------- HELPERS ---------------- */
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedCategory('all');
     setPriceRange([0, 2000]);
     setStatusFilter('all');
     setSortBy('name');
@@ -63,109 +85,31 @@ const Pets: React.FC = () => {
     searchTerm,
     selectedCategory !== 'all',
     priceRange[0] > 0 || priceRange[1] < 2000,
-    statusFilter !== 'all'
+    statusFilter !== 'all',
   ].filter(Boolean).length;
 
-  const FilterContent = () => (
-    <div className="space-y-6">
-      {/* Category Filter */}
-      <div>
-        <label className="font-medium mb-2 block">Category</label>
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(cat => (
-              <SelectItem key={cat.id} value={cat.name}>
-                {cat.icon} {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Price Range */}
-      <div>
-        <label className="font-medium mb-2 block">Price Range</label>
-        <div className="px-2">
-          <Slider
-            value={priceRange}
-            onValueChange={(value) => setPriceRange(value as [number, number])}
-            max={2000}
-            step={50}
-            className="mb-2"
-          />
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Status Filter */}
-      <div>
-        <label className="font-medium mb-2 block">Availability</label>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="available">Available</SelectItem>
-            <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-            <SelectItem value="unavailable">Unavailable</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Sort By */}
-      <div>
-        <label className="font-medium mb-2 block">Sort By</label>
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger>
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name">Name (A-Z)</SelectItem>
-            <SelectItem value="price-low">Price: Low to High</SelectItem>
-            <SelectItem value="price-high">Price: High to Low</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Button variant="outline" className="w-full" onClick={clearFilters}>
-        <X className="mr-2 h-4 w-4" /> Clear Filters
-      </Button>
-    </div>
-  );
-
+  /* ---------------- UI ---------------- */
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="font-serif text-4xl font-bold mb-2">Our Pets</h1>
-            <p className="text-muted-foreground">Find your perfect companion from our selection of adorable pets</p>
-          </div>
+          <h1 className="font-serif text-4xl font-bold mb-6">Our Pets</h1>
 
-          {/* Search and Filter Bar */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
+          {/* SEARCH */}
+          <div className="flex gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Search pets by name, breed..."
+                placeholder="Search pets..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
-            {/* Mobile Filter Button */}
+
+            {/* MOBILE FILTER */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" className="md:hidden">
@@ -180,86 +124,53 @@ const Pets: React.FC = () => {
                 <SheetHeader>
                   <SheetTitle>Filters</SheetTitle>
                 </SheetHeader>
-                <div className="mt-6">
-                  <FilterContent />
-                </div>
               </SheetContent>
             </Sheet>
+          </div>
 
-            {/* Desktop Category Chips */}
-            <div className="hidden md:flex gap-2 flex-wrap">
+          {/* CATEGORY BUTTONS */}
+          <div className="flex gap-2 mb-6 flex-wrap">
+            <Button
+              size="sm"
+              variant={selectedCategory === 'all' ? 'default' : 'outline'}
+              onClick={() => setSearchParams({})}
+            >
+              All
+            </Button>
+
+            {categories.map(cat => (
               <Button
-                variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                key={cat.id}
                 size="sm"
-                onClick={() => setSelectedCategory('all')}
+                variant={selectedCategory === cat.name ? 'default' : 'outline'}
+                onClick={() =>
+                  setSearchParams({ category: cat.name })
+                }
               >
-                All
+                {cat.icon} {cat.name}
               </Button>
-              {categories.map(cat => (
-                <Button
-                  key={cat.id}
-                  variant={selectedCategory === cat.name ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedCategory(cat.name)}
-                >
-                  {cat.icon} {cat.name}
-                </Button>
+            ))}
+          </div>
+
+          {/* PET GRID */}
+          {filteredPets.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPets.map(pet => (
+                <PetCard key={pet.id} pet={pet} />
               ))}
             </div>
-          </div>
-
-          <div className="flex gap-8">
-            {/* Desktop Sidebar Filters */}
-            <aside className="hidden md:block w-64 shrink-0">
-              <div className="sticky top-24 p-4 rounded-lg border bg-card">
-                <h3 className="font-semibold mb-4">Filters</h3>
-                <FilterContent />
-              </div>
-            </aside>
-
-            {/* Pet Grid */}
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-4">
-                <p className="text-muted-foreground">
-                  Showing {filteredPets.length} pet{filteredPets.length !== 1 ? 's' : ''}
-                </p>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Name (A-Z)</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {filteredPets.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredPets.map((pet, index) => (
-                    <div 
-                      key={pet.id}
-                      className="animate-fade-in-up opacity-0"
-                      style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}
-                    >
-                      <PetCard pet={pet} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-20">
-                  <span className="text-6xl mb-4 block">🐾</span>
-                  <h3 className="font-serif text-2xl font-semibold mb-2">No pets found</h3>
-                  <p className="text-muted-foreground mb-4">Try adjusting your filters or search term</p>
-                  <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
-                </div>
-              )}
+          ) : (
+            <div className="text-center py-20">
+              <span className="text-6xl">🐾</span>
+              <h3 className="text-2xl font-semibold mt-4">No pets found</h3>
+              <Button variant="outline" className="mt-4" onClick={clearFilters}>
+                Clear Filters
+              </Button>
             </div>
-          </div>
+          )}
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );
