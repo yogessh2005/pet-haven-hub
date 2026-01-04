@@ -43,16 +43,16 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-serif text-lg font-semibold mb-4">Contact Us</h4>
             <ul className="space-y-2 text-muted-foreground text-sm">
-              <li>📍 123 Pet Street, Animal City</li>
-              <li>📞 +1 (555) 123-4567</li>
-              <li>✉️ hello@petpals.com</li>
+              <li> Pet Street karumathampatti</li>
+              <li>6382161975</li>
+              <li>yogeshlogesh77@gmail.com</li>
               <li>🕒 Mon-Sat: 9AM - 8PM</li>
             </ul>
           </div>
         </div>
 
         <div className="border-t mt-8 pt-8 text-center text-muted-foreground text-sm">
-          <p>© 2024 PetPals. All rights reserved. Made with ❤️ for pet lovers.</p>
+          <p>© 2024 PetPals. All rights reserved Thoughtfully crafted with ❤️ for those who cherish their pets.</p>
         </div>
       </div>
     </footer>
