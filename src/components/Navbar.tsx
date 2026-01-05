@@ -24,6 +24,7 @@ const Navbar: React.FC = () => {
     { name: 'Pets', path: '/pets' },
     { name: 'Categories', path: '/categories' },
     { name: 'About', path: '/about' },
+    { name: 'Track Order', path: '/tracking' },
     { name: 'Contact', path: '/contact' },
   ];
 

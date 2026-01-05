@@ -8,7 +8,7 @@ import { STORAGE_KEYS } from '@/data/demoData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Package, Clock, Truck, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, XCircle, ArrowRight, MapPin, Phone, CreditCard } from 'lucide-react';
 
 const Orders: React.FC = () => {
   const { user } = useAuth();
@@ -41,25 +41,35 @@ const Orders: React.FC = () => {
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500/10 text-yellow-600';
-      case 'processing': return 'bg-blue-500/10 text-blue-600';
-      case 'shipped': return 'bg-purple-500/10 text-purple-600';
-      case 'delivered': return 'bg-green-500/10 text-green-600';
-      case 'cancelled': return 'bg-red-500/10 text-red-600';
+      case 'pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-200';
+      case 'processing': return 'bg-blue-500/10 text-blue-600 border-blue-200';
+      case 'shipped': return 'bg-purple-500/10 text-purple-600 border-purple-200';
+      case 'delivered': return 'bg-green-500/10 text-green-600 border-green-200';
+      case 'cancelled': return 'bg-red-500/10 text-red-600 border-red-200';
+    }
+  };
+
+  const handleTrackOrder = (trackingNumber?: string) => {
+    if (trackingNumber) {
+      navigate(`/tracking?track=${trackingNumber}`);
+    } else {
+      navigate('/tracking');
     }
   };
 
   if (orders.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-muted/20">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="font-serif text-2xl font-semibold mb-2">No orders yet</h2>
-            <p className="text-muted-foreground mb-6">Start shopping to see your orders here</p>
-            <Button className="btn-gradient" onClick={() => navigate('/pets')}>
-              Browse Pets <ArrowRight className="ml-2 h-4 w-4" />
+        <main className="flex-1 flex items-center justify-center py-20">
+          <div className="text-center max-w-md mx-auto px-4">
+            <Package className="h-24 w-24 mx-auto text-muted-foreground/50 mb-6" />
+            <h2 className="font-serif text-3xl font-bold mb-3">No orders yet</h2>
+            <p className="text-muted-foreground mb-8 text-lg">
+              Start shopping to see your orders here. Your order history will appear once you make a purchase.
+            </p>
+            <Button className="btn-gradient h-12 px-8 text-lg" onClick={() => navigate('/pets')}>
+              Browse Pets <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
         </main>
@@ -69,58 +79,85 @@ const Orders: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
       
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
-          <h1 className="font-serif text-4xl font-bold mb-8">
-            {user?.isAdmin ? 'All Orders' : 'My Orders'}
-          </h1>
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="font-serif text-4xl font-bold">
+              {user?.isAdmin ? 'All Orders' : 'My Orders'}
+            </h1>
+            <Button 
+              variant="outline"
+              onClick={() => navigate('/tracking')}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Track Order
+            </Button>
+          </div>
 
           <div className="space-y-6">
             {orders.map(order => (
-              <Card key={order.id} className="overflow-hidden">
-                <CardHeader className="bg-muted/30">
+              <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <CardHeader className="bg-primary/5 border-b">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <CardTitle className="font-serif text-lg">{order.id}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        Placed on {new Date(order.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <CardTitle className="font-serif text-xl">{order.id}</CardTitle>
+                        <Badge className={`${getStatusColor(order.status)} border`}>
+                          {getStatusIcon(order.status)}
+                          <span className="ml-1 capitalize font-semibold">{order.status}</span>
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                        <span>
+                          Placed on {new Date(order.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        {order.trackingNumber && (
+                          <span className="font-mono font-semibold text-primary">
+                            {order.trackingNumber}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Badge className={getStatusColor(order.status)}>
-                        {getStatusIcon(order.status)}
-                        <span className="ml-1 capitalize">{order.status}</span>
-                      </Badge>
-                      <span className="font-serif text-xl font-bold text-primary">
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
+                      <p className="font-serif text-2xl font-bold text-primary">
                         ${order.total.toFixed(2)}
-                      </span>
+                      </p>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Items */}
-                    <div>
-                      <h4 className="font-medium mb-3">Items ({order.items.length})</h4>
+                    <div className="lg:col-span-2">
+                      <h4 className="font-semibold mb-4 flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        Items ({order.items.length})
+                      </h4>
                       <div className="space-y-3">
                         {order.items.map(item => (
-                          <div key={item.pet.id} className="flex items-center gap-3">
+                          <div key={item.pet.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
                             <img
                               src={item.pet.image}
                               alt={item.pet.name}
-                              className="w-12 h-12 object-cover rounded-lg"
+                              className="w-16 h-16 object-cover rounded-lg"
                             />
                             <div className="flex-1">
-                              <p className="font-medium text-sm">{item.pet.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {item.quantity} x ${item.pet.price}
+                              <p className="font-semibold">{item.pet.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Breed: {item.pet.breed}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {item.quantity} x ${item.pet.price.toFixed(2)} = ${(item.pet.price * item.quantity).toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -128,41 +165,70 @@ const Orders: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Shipping */}
-                    <div>
-                      <h4 className="font-medium mb-3">Shipping Address</h4>
-                      <p className="text-sm text-muted-foreground">{order.shippingAddress}</p>
-                      
+                    {/* Shipping & Payment Info */}
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          Shipping Address
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-2">{order.shippingAddress}</p>
+                        {order.phone && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            {order.phone}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Payment Method
+                        </h4>
+                        <Badge variant="outline" className="text-sm">
+                          {order.paymentMethod}
+                        </Badge>
+                      </div>
+
                       {/* Order Timeline */}
-                      <div className="mt-4">
-                        <h4 className="font-medium mb-3">Order Status</h4>
-                        <div className="flex items-center gap-2">
-                          {['pending', 'processing', 'shipped', 'delivered'].map((status, index) => (
-                            <React.Fragment key={status}>
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                ['pending', 'processing', 'shipped', 'delivered'].indexOf(order.status) >= index
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted text-muted-foreground'
-                              }`}>
-                                {index + 1}
+                      <div>
+                        <h4 className="font-semibold mb-3">Order Status</h4>
+                        <div className="space-y-2">
+                          {['pending', 'processing', 'shipped', 'delivered'].map((status, index) => {
+                            const isActive = ['pending', 'processing', 'shipped', 'delivered'].indexOf(order.status) >= index;
+                            const isCurrent = ['pending', 'processing', 'shipped', 'delivered'].indexOf(order.status) === index;
+                            
+                            return (
+                              <div key={status} className="flex items-center gap-2">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+                                  isActive
+                                    ? isCurrent
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-green-500 text-white'
+                                    : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  {isActive && !isCurrent ? '✓' : index + 1}
+                                </div>
+                                <span className={`text-sm ${isActive ? 'font-medium' : 'text-muted-foreground'}`}>
+                                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                                </span>
                               </div>
-                              {index < 3 && (
-                                <div className={`flex-1 h-1 ${
-                                  ['pending', 'processing', 'shipped', 'delivered'].indexOf(order.status) > index
-                                    ? 'bg-primary'
-                                    : 'bg-muted'
-                                }`} />
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span>Pending</span>
-                          <span>Processing</span>
-                          <span>Shipped</span>
-                          <span>Delivered</span>
+                            );
+                          })}
                         </div>
                       </div>
+
+                      {/* Track Button */}
+                      {order.trackingNumber && (
+                        <Button 
+                          className="w-full btn-gradient"
+                          onClick={() => handleTrackOrder(order.trackingNumber)}
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Track Order
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
