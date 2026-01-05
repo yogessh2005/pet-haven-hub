@@ -1,168 +1,160 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthContextType } from '@/types';
-import { STORAGE_KEYS } from '@/data/demoData';
-import { useToast } from '@/hooks/use-toast';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser,
+} from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { User, AuthContextType } from "@/types";
+import { STORAGE_KEYS } from "@/data/demoData";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ADMIN_EMAIL = '71762333054@cit.edu.in';
-const ADMIN_PASSWORD = 'CIT@2023';
+const ADMIN_EMAIL = "71762333054@cit.edu.in";
+const ADMIN_PASSWORD = "CIT@2023";
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // 🔁 Restore Firebase session
   useEffect(() => {
-    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) mapFirebaseUser(firebaseUser);
+      else setUser(null);
+      setIsLoading(false);
+    });
+    return unsub;
   }, []);
 
+  const mapFirebaseUser = (firebaseUser: FirebaseUser) => {
+    if (!firebaseUser.email) return;
+
+    const appUser: User = {
+      id: firebaseUser.uid,
+      email: firebaseUser.email,
+      name: firebaseUser.displayName || "Google User",
+      isAdmin: false,
+    };
+
+    setUser(appUser);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(appUser));
+  };
+
+  // ✅ EMAIL LOGIN (Admin + Local users)
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check for admin credentials
+    await new Promise((r) => setTimeout(r, 800));
+
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       const adminUser: User = {
-        id: 'admin-1',
-        email: ADMIN_EMAIL,
-        name: 'Admin',
-        isAdmin: true
+        id: "admin-1",
+        email,
+        name: "Admin",
+        isAdmin: true,
       };
       setUser(adminUser);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(adminUser));
+      toast({ title: "Welcome Admin!" });
       setIsLoading(false);
-      toast({
-        title: 'Welcome Admin!',
-        description: 'You have successfully logged in as administrator.',
-      });
       return true;
     }
-    
-    // Check stored users
-    const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    const storedPasswords: Record<string, string> = JSON.parse(localStorage.getItem('petshop_passwords') || '{}');
-    
-    const foundUser = users.find(u => u.email === email);
-    if (foundUser && storedPasswords[email] === password) {
-      setUser(foundUser);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(foundUser));
+
+    const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || "[]");
+    const passwords = JSON.parse(localStorage.getItem("petshop_passwords") || "{}");
+
+    const found = users.find((u) => u.email === email);
+    if (found && passwords[email] === password) {
+      setUser(found);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(found));
+      toast({ title: `Welcome back ${found.name}` });
       setIsLoading(false);
-      toast({
-        title: 'Welcome back!',
-        description: `Hello ${foundUser.name}, you have successfully logged in.`,
-      });
       return true;
     }
-    
-    setIsLoading(false);
+
     toast({
-      title: 'Login failed',
-      description: 'Invalid email or password. Please try again or sign up.',
-      variant: 'destructive'
+      title: "Login failed",
+      description: "Invalid email or password",
+      variant: "destructive",
     });
+    setIsLoading(false);
     return false;
   };
 
+  // ✅ EMAIL SIGNUP (Local)
   const signup = async (email: string, password: string, name: string): Promise<boolean> => {
     setIsLoading(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    
-    // Check if user already exists
-    if (users.find(u => u.email === email)) {
-      setIsLoading(false);
+    await new Promise((r) => setTimeout(r, 800));
+
+    const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || "[]");
+    if (users.find((u) => u.email === email)) {
       toast({
-        title: 'Signup failed',
-        description: 'An account with this email already exists.',
-        variant: 'destructive'
+        title: "Signup failed",
+        description: "Email already exists",
+        variant: "destructive",
       });
+      setIsLoading(false);
       return false;
     }
-    
+
     const newUser: User = {
       id: `user-${Date.now()}`,
       email,
       name,
-      isAdmin: false
+      isAdmin: false,
     };
-    
+
     users.push(newUser);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    
-    // Store password (in real app, this would be hashed on server)
-    const storedPasswords: Record<string, string> = JSON.parse(localStorage.getItem('petshop_passwords') || '{}');
-    storedPasswords[email] = password;
-    localStorage.setItem('petshop_passwords', JSON.stringify(storedPasswords));
-    
+
+    const passwords = JSON.parse(localStorage.getItem("petshop_passwords") || "{}");
+    passwords[email] = password;
+    localStorage.setItem("petshop_passwords", JSON.stringify(passwords));
+
     setUser(newUser);
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
+
+    toast({ title: "Welcome to PetPals!" });
     setIsLoading(false);
-    
-    toast({
-      title: 'Welcome to PetPals!',
-      description: 'Your account has been created successfully.',
-    });
     return true;
   };
 
+  // ✅ REAL GOOGLE LOGIN / SIGNUP
   const loginWithGoogle = async (): Promise<boolean> => {
     setIsLoading(true);
-    
-    // Simulate Google OAuth
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const googleUser: User = {
-      id: `google-${Date.now()}`,
-      email: `user${Date.now()}@gmail.com`,
-      name: 'Google User',
-      isAdmin: false
-    };
-    
-    const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    users.push(googleUser);
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    
-    setUser(googleUser);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(googleUser));
-    setIsLoading(false);
-    
-    toast({
-      title: 'Welcome!',
-      description: 'You have successfully logged in with Google.',
-    });
-    return true;
+    try {
+      const res = await signInWithPopup(auth, googleProvider);
+      mapFirebaseUser(res.user);
+      toast({ title: "Logged in with Google" });
+      return true;
+    } catch {
+      await signInWithRedirect(auth, googleProvider);
+      return true;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    await signOut(auth);
     localStorage.removeItem(STORAGE_KEYS.USER);
-    toast({
-      title: 'Logged out',
-      description: 'You have been successfully logged out.',
-    });
+    setUser(null);
+    toast({ title: "Logged out successfully" });
   };
 
   return (
     <AuthContext.Provider value={{ user, login, signup, loginWithGoogle, logout, isLoading }}>
-      {children}
+      {!isLoading && children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be inside AuthProvider");
+  return ctx;
 };
