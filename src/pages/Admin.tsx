@@ -98,7 +98,35 @@ const Admin: React.FC = () => {
   };
 
   const updateOrderStatus = (id: string, status: Order['status']) => {
-    const updated = orders.map(o => (o.id === id ? { ...o, status } : o));
+    const updated = orders.map(o => {
+      if (o.id === id) {
+        const statusMessages: Record<Order['status'], { description: string; location: string }> = {
+          pending: { description: 'Your order has been placed and is awaiting processing.', location: 'Order Processing Center' },
+          processing: { description: 'Your order is being prepared for shipment.', location: 'Warehouse' },
+          shipped: { description: 'Your order has been shipped and is on its way.', location: 'In Transit' },
+          delivered: { description: 'Your order has been delivered successfully.', location: 'Delivered' },
+          cancelled: { description: 'Your order has been cancelled.', location: 'Order Processing Center' },
+        };
+
+        const update = statusMessages[status];
+        const newTrackingUpdate = {
+          status: status.charAt(0).toUpperCase() + status.slice(1),
+          location: update.location,
+          timestamp: new Date(),
+          description: update.description,
+        };
+
+        return {
+          ...o,
+          status,
+          trackingUpdates: [
+            ...(o.trackingUpdates || []),
+            newTrackingUpdate,
+          ],
+        };
+      }
+      return o;
+    });
     localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updated));
     setOrders(updated);
     toast({ title: 'Order status updated' });

@@ -48,29 +48,38 @@ const Bird: React.FC<BirdProps> = ({ className = '', color = 'hsl(24, 80%, 50%)'
 export const FlyingBirds: React.FC = () => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Bird 1 - Orange */}
+      {/* Bird 1 - Orange - Larger */}
       <div className="bird absolute top-[15%] left-[5%]">
-        <Bird color="hsl(24, 80%, 50%)" size={35} />
+        <Bird color="hsl(24, 80%, 50%)" size={60} />
       </div>
       
-      {/* Bird 2 - Teal (flying opposite) */}
+      {/* Bird 2 - Teal (flying opposite) - Larger */}
       <div className="bird-reverse absolute top-[25%] right-[10%]">
-        <Bird color="hsl(160, 40%, 45%)" size={30} />
+        <Bird color="hsl(160, 40%, 45%)" size={55} />
       </div>
       
-      {/* Bird 3 - Gold */}
+      {/* Bird 3 - Gold - Larger */}
       <div className="bird absolute top-[10%] left-[30%]" style={{ animationDelay: '2s' }}>
-        <Bird color="hsl(45, 90%, 55%)" size={25} />
+        <Bird color="hsl(45, 90%, 55%)" size={50} />
       </div>
       
-      {/* Bird 4 - Orange variant */}
+      {/* Bird 4 - Orange variant - Larger */}
       <div className="bird-reverse absolute top-[20%] right-[35%]" style={{ animationDelay: '1s' }}>
-        <Bird color="hsl(24, 70%, 60%)" size={28} />
+        <Bird color="hsl(24, 70%, 60%)" size={52} />
       </div>
       
-      {/* Bird 5 - Small accent */}
+      {/* Bird 5 - Larger accent */}
       <div className="bird absolute top-[8%] left-[60%]" style={{ animationDelay: '3s' }}>
-        <Bird color="hsl(160, 50%, 50%)" size={22} />
+        <Bird color="hsl(160, 50%, 50%)" size={48} />
+      </div>
+      
+      {/* Additional birds for more visibility */}
+      <div className="bird-reverse absolute top-[35%] left-[70%]" style={{ animationDelay: '1.5s' }}>
+        <Bird color="hsl(24, 80%, 50%)" size={45} />
+      </div>
+      
+      <div className="bird absolute top-[5%] right-[20%]" style={{ animationDelay: '2.5s' }}>
+        <Bird color="hsl(45, 90%, 55%)" size={40} />
       </div>
     </div>
   );

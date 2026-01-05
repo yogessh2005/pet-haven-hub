@@ -31,6 +31,15 @@ export interface CartItem {
   quantity: number;
 }
 
+export type PaymentMethod = 'COD' | 'GPay' | 'PhonePe' | 'Paytm';
+
+export interface TrackingUpdate {
+  status: string;
+  location: string;
+  timestamp: Date;
+  description: string;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -39,6 +48,12 @@ export interface Order {
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: Date;
   shippingAddress: string;
+  paymentMethod: PaymentMethod;
+  trackingNumber?: string;
+  trackingUpdates?: TrackingUpdate[];
+  phone: string;
+  city: string;
+  notes?: string;
 }
 
 export interface AuthContextType {
